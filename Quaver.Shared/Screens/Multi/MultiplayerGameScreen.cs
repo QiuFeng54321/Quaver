@@ -106,7 +106,7 @@ namespace Quaver.Shared.Screens.Multi
 
             MapLoadingScreen.AddModsFromIdentifiers(OnlineManager.GetSelfActivatedMods());
             OnlineManager.SendGameDifficultyRatings(OnlineManager.CurrentGame.MapMd5, OnlineManager.CurrentGame.AlternativeMd5);
-            
+
             base.OnFirstUpdate();
         }
 
@@ -273,6 +273,10 @@ namespace Quaver.Shared.Screens.Multi
                 // Decrease Rate
                 if (KeyboardManager.IsUniqueKeyPress(ConfigManager.KeyDecreaseGameplayAudioRate.Value))
                     ModManager.AddSpeedMods(SelectionScreen.GetNextRate(false, KeyboardManager.IsShiftDown()));
+
+                // Toggle Mirror
+                if (KeyboardManager.IsUniqueKeyPress(ConfigManager.KeyToggleMirror.Value))
+                    ModManager.ToggleMod(ModIdentifier.Mirror, true);
             }
         }
 

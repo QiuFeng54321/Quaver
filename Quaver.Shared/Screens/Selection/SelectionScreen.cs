@@ -435,6 +435,10 @@ namespace Quaver.Shared.Screens.Selection
             if (KeyboardManager.IsUniqueKeyPress(ConfigManager.KeyDecreaseGameplayAudioRate.Value))
                 ModManager.AddSpeedMods(GetNextRate(false, shiftHeld));
 
+            // Toggle Mirror
+            if (KeyboardManager.IsUniqueKeyPress(ConfigManager.KeyToggleMirror.Value))
+                ModManager.ToggleMod(ModIdentifier.Mirror, true);
+
             // Change from pitched to non-pitched
             if (KeyboardManager.IsUniqueKeyPress(Keys.D0))
                 ConfigManager.Pitched.Value = !ConfigManager.Pitched.Value;
