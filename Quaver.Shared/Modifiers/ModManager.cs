@@ -216,6 +216,23 @@ namespace Quaver.Shared.Modifiers
             }
         }
 
+
+
+        /// <summary>
+        ///     Toggles the mirror mod
+        /// </summary>
+        public static void ToggleMod(ModIdentifier modIdentifier, bool updateMultiplayerMods = false)
+        {
+            if (IsActivated(modIdentifier))
+            {
+                RemoveMod(modIdentifier, updateMultiplayerMods);
+            }
+            else
+            {
+                AddMod(modIdentifier, updateMultiplayerMods);
+            }
+        }
+
         /// <summary>
         ///     Checks if a gameplayModifier is currently activated.
         /// </summary>
