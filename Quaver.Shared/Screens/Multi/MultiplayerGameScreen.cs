@@ -274,6 +274,8 @@ namespace Quaver.Shared.Screens.Multi
                 if (KeyboardManager.IsUniqueKeyPress(ConfigManager.KeyDecreaseGameplayAudioRate.Value))
                     ModManager.AddSpeedMods(SelectionScreen.GetNextRate(false, KeyboardManager.IsShiftDown()));
             }
+            if (KeyboardManager.IsUniqueKeyPress(Keys.D0))
+                ConfigManager.Pitched.Value = !ConfigManager.Pitched.Value;
         }
 
         /// <summary>
