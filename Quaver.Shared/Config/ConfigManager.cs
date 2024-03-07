@@ -112,6 +112,11 @@ namespace Quaver.Shared.Config
         ///     The SFX volume of the game.
         /// </summary>
         internal static BindableInt VolumeEffect { get; private set; }
+        
+        /// <summary>
+        ///     Automatically adjust the volume of songs to make them sound consistently loud
+        /// </summary>
+        internal static Bindable<bool> AutomaticNormalization { get; private set; }
 
         /// <summary>
         ///     The Music volume of the gamne.
@@ -901,6 +906,7 @@ namespace Quaver.Shared.Config
             VolumeGlobal = ReadInt(@"VolumeGlobal", 50, 0, 100, data);
             VolumeEffect = ReadInt(@"VolumeEffect", 20, 0, 100, data);
             VolumeMusic = ReadInt(@"VolumeMusic", 50, 0, 100, data);
+            AutomaticNormalization = ReadValue(@"AutomaticNormalization", true, data);
             DevicePeriod = ReadInt(@"DevicePeriod", 2, 1, 100, data);
             DeviceBufferLengthMultiplier = ReadInt(@"DeviceBufferLengthMultiplier", 4, 2, 10, data);
             BackgroundBrightness = ReadInt(@"BackgroundBrightness", 50, 0, 100, data);

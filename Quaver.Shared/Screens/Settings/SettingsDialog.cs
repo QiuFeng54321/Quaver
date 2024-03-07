@@ -331,6 +331,7 @@ namespace Quaver.Shared.Screens.Settings
                     new SettingsSlider(this, "Master Volume", ConfigManager.VolumeGlobal, x => $"{x}%"),
                     new SettingsSlider(this, "Music Volume", ConfigManager.VolumeMusic, x => $"{x}%"),
                     new SettingsSlider(this, "Effect Volume", ConfigManager.VolumeEffect, x => $"{x}%"),
+                    new SettingsBool(this, "Automatic Normalization", ConfigManager.AutomaticNormalization),
                     new SettingsBool(this, "Enable Hitsounds", ConfigManager.EnableHitsounds),
                     new SettingsBool(this, "Enable Keysounds", ConfigManager.EnableKeysounds),
                     new SettingsBool(this, "Pitch Audio With Rate", ConfigManager.Pitched),

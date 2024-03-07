@@ -169,6 +169,7 @@ namespace Quaver.Shared.Screens.Options
                         {
                             Tags = new List<string> {"fx", "sfx"}
                         },
+                        new OptionsItemCheckbox(containerRect, "Automatic Normalization", ConfigManager.AutomaticNormalization)
                     }),
                     new OptionsSubcategory("Offset", new List<OptionsItem>()
                     {

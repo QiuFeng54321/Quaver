@@ -433,6 +433,8 @@ namespace Quaver.Shared
             AudioTrack.GlobalVolume = ConfigManager.VolumeGlobal.Value * ConfigManager.VolumeMusic.Value / 100f;
             AudioSample.GlobalVolume = ConfigManager.VolumeGlobal.Value * ConfigManager.VolumeEffect.Value / 100f;
 
+            AudioTrack.GlobalNormalize = ConfigManager.AutomaticNormalization;
+
             ConfigManager.VolumeGlobal.ValueChanged += (sender, e) =>
             {
                 AudioTrack.GlobalVolume = e.Value * ConfigManager.VolumeMusic.Value / 100f;
