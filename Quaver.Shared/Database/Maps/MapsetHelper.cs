@@ -753,7 +753,66 @@ namespace Quaver.Shared.Database.Maps
 
             return sets;
         }
+        /// <summary>
+        ///     Compares two values and determines
+        /// </summary>
+        /// <param name="val1"></param>
+        /// <param name="val2"></param>
+        /// <param name="operation"></param>
+        /// <param name="precision"></param>
+        /// <returns></returns>
+        private static bool RoughCompareValues(double val1, double val2, string operation, double precision)
+        {
 
+            switch (operation)
+            {
+                case "<":
+                    return val1 < val2;
+                case ">":
+                    return val1 > val2;
+                case "=":
+                case "==":
+                    return Math.Abs(val2 - val1) <= precision;
+                case "<=":
+                    return val1 <= val2;
+                case ">=":
+                    return val1 >= val2;
+                case "!=":
+                    return Math.Abs(val2 - val1) > precision;
+                default:
+                    return false;
+            }
+        }
+        /// <summary>
+        ///     Compares two values and determines
+        /// </summary>
+        /// <param name="val1"></param>
+        /// <param name="val2"></param>
+        /// <param name="operation"></param>
+        /// <param name="precision"></param>
+        /// <returns></returns>
+        private static bool RoughCompareValues(float val1, float val2, string operation, float precision)
+        {
+
+            switch (operation)
+            {
+                case "<":
+                    return val1 < val2;
+                case ">":
+                    return val1 > val2;
+                case "=":
+                case "==":
+                    return MathF.Abs(val2 - val1) <= precision;
+                case "<=":
+                    return val1 <= val2;
+                case ">=":
+                    return val1 >= val2;
+                case "!=":
+                    return MathF.Abs(val2 - val1) > precision;
+                default:
+                    return false;
+            }
+        }
         /// <summary>
         ///     Compares two values and determines
         /// </summary>
