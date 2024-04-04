@@ -581,14 +581,14 @@ namespace Quaver.Shared.Database.Maps
                                 if (!float.TryParse(searchQuery.Value, out var valBpm))
                                     exitLoop = true;
 
-                                if (!CompareValues(map.Bpm, valBpm, searchQuery.Operator))
+                                if (!RoughCompareValues(map.Bpm, valBpm, searchQuery.Operator, 1))
                                     exitLoop = true;
                                 break;
                             case SearchFilterOption.Difficulty:
                                 if (!float.TryParse(searchQuery.Value, out var valDiff))
                                     exitLoop = true;
 
-                                if (!CompareValues(map.DifficultyFromMods(ModManager.Mods), valDiff, searchQuery.Operator))
+                                if (!RoughCompareValues(map.DifficultyFromMods(ModManager.Mods), valDiff, searchQuery.Operator, 0.01))
                                     exitLoop = true;
                                 break;
                             case SearchFilterOption.NPS:
@@ -598,14 +598,14 @@ namespace Quaver.Shared.Database.Maps
                                 var objectCount = map.LongNoteCount + map.RegularNoteCount;
                                 var nps = (objectCount / (map.SongLength / (1000 * ModHelper.GetRateFromMods(ModManager.Mods))));
 
-                                if (!CompareValues(nps, valNps, searchQuery.Operator))
+                                if (!RoughCompareValues(nps, valNps, searchQuery.Operator, 0.01))
                                     exitLoop = true;
                                 break;
                             case SearchFilterOption.Length:
                                 if (!float.TryParse(searchQuery.Value, out var valLength))
                                     exitLoop = true;
 
-                                if (!CompareValues(map.SongLength / 1000f, valLength, searchQuery.Operator))
+                                if (!RoughCompareValues(map.SongLength / 1000f, valLength, searchQuery.Operator, 1))
                                     exitLoop = true;
                                 break;
                             case SearchFilterOption.TimesPlayed:
