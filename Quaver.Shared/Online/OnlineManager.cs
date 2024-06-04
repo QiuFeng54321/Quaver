@@ -323,6 +323,7 @@ namespace Quaver.Shared.Online
             {
                 case QuaverScreenType.Multiplayer:
                 case QuaverScreenType.Lobby:
+                case QuaverScreenType.Gameplay when game.CurrentScreen is TournamentScreen:
                     game.CurrentScreen?.Exit(() => new MainMenuScreen());
                     break;
             }
