@@ -70,6 +70,10 @@ namespace Quaver.Shared.Skinning
 
         internal bool ColorObjectsBySnapDistance { get; private set; }
 
+        internal bool ColorObjectsByTimingGroup { get; private set; } = false;
+
+        internal bool ColorObjectsByLayer { get; private set; } = true;
+
         [FixedScale]
         internal float JudgementHitBurstScale { get; private set; }
 
@@ -489,6 +493,8 @@ namespace Quaver.Shared.Skinning
             ReceptorPosOffsetY = ConfigHelper.ReadInt32((int)ReceptorPosOffsetY, ini["ReceptorPosOffsetY"]);
             ColumnAlignment = ConfigHelper.ReadInt32((int)ColumnAlignment, ini["ColumnAlignment"]);
             ColorObjectsBySnapDistance = ConfigHelper.ReadBool(ColorObjectsBySnapDistance, ini["ColorObjectsBySnapDistance"]);
+            ColorObjectsByTimingGroup = ConfigHelper.ReadBool(ColorObjectsByTimingGroup, ini["ColorObjectsByTimingGroup"]);
+            ColorObjectsByLayer = ConfigHelper.ReadBool(ColorObjectsByLayer, ini["ColorObjectsByLayer"]);
             JudgementHitBurstScale = ConfigHelper.ReadByte((byte)JudgementHitBurstScale, ini["JudgementHitBurstScale"]);
             ReceptorsOverHitObjects = ConfigHelper.ReadBool(ReceptorsOverHitObjects, ini["ReceptorsOverHitObjects"]);
             JudgeColors[Judgement.Marv] = ConfigHelper.ReadColor(JudgeColors[Judgement.Marv], ini["JudgeColorMarv"]);

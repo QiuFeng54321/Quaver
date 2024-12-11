@@ -14,6 +14,7 @@ using Quaver.API.Maps.Processors.Scoring.Data;
 using Quaver.API.Maps.Structures;
 using Quaver.Shared.Config;
 using Quaver.Shared.Database.Maps;
+using Quaver.Shared.Helpers;
 using Quaver.Shared.Screens.Gameplay.Rulesets.HitObjects;
 using Quaver.Shared.Screens.Gameplay.Rulesets.Keys.Playfield;
 using Quaver.Shared.Screens.Gameplay.Rulesets.Keys.Playfield.Hits;
@@ -242,7 +243,14 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
                 }
             }
 
-            Tint = info.State == HitObjectState.Dead ? SkinManager.Skin.Keys[Ruleset.Mode].DeadNoteColor : Color.White;
+            Tint = info.State == HitObjectState.Dead
+                ? SkinManager.Skin.Keys[Ruleset.Mode].DeadNoteColor
+                : skin.ColorObjectsByTimingGroup
+                    ? ColorHelper.ToXnaColor(manager.Ruleset.Screen.Map.TimingGroups[info.HitObjectInfo.TimingGroup]
+                        .GetColor())
+                    : skin.ColorObjectsByLayer && info.HitObjectInfo.EditorLayer != 0
+                        ? ColorHelper.ToXnaColor(manager.Ruleset.Screen.Map.EditorLayers[info.HitObjectInfo.EditorLayer - 1].GetColor())
+                        : Color.White;
             var tint = Tint * (HitObjectManager.ShowHits ? HitObjectManagerKeys.SHOW_HITS_NOTE_ALPHA : 1);
             tint.A = 255;
 
@@ -441,7 +449,7 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
             lane = lane - 1;
             var skin = SkinManager.Skin.Keys[mode];
 
-            if (skin.ColorObjectsBySnapDistance)
+            if (skin.ColorObjectsBySnapDistance && !skin.ColorObjectsByTimingGroup && !skin.ColorObjectsByLayer)
             {
                 var objects = Info.IsLongNote ? skin.NoteHoldHitObjects[lane] : skin.NoteHitObjects[lane];
 
