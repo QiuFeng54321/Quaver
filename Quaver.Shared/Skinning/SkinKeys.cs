@@ -70,9 +70,9 @@ namespace Quaver.Shared.Skinning
 
         internal bool ColorObjectsBySnapDistance { get; private set; }
 
-        internal bool ColorObjectsByTimingGroup { get; private set; } = false;
+        internal bool ColorObjectsByTimingGroup { get; private set; }
 
-        internal bool ColorObjectsByLayer { get; private set; } = true;
+        internal bool ColorObjectsByLayer { get; private set; }
 
         [FixedScale]
         internal float JudgementHitBurstScale { get; private set; }

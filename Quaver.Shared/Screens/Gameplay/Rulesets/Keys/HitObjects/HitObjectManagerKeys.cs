@@ -123,8 +123,8 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
 
         public bool[] LaneVisibility { get; private set; }
 
-        public const int MinLaneFlickerDuration = 200;
-        public const int MaxLaneFlickerDuration = 500;
+        public const int MinLaneFlickerDuration = 100;
+        public const int MaxLaneFlickerDuration = 300;
         private float LaneFlickerDuration { get; set; }
         private int[] ToggleLanes { get; set; }
 
@@ -767,10 +767,6 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
                 return;
             var tp = Map.GetTimingPointAt(CurrentVisualAudioOffset);
             var flickerIndex = (int)((CurrentVisualAudioOffset - tp.StartTime) / LaneFlickerDuration);
-            if (tp != LastTimingPointInfo || flickerIndex % 40 == 0)
-            {
-                PickToggleLanes();
-            }
 
             LaneFlickerDuration = tp.MillisecondsPerBeat;
             while (LaneFlickerDuration < MinLaneFlickerDuration)
@@ -778,16 +774,19 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
             while (LaneFlickerDuration > MaxLaneFlickerDuration)
                 LaneFlickerDuration /= 2;
 
-            if (LastFlickerIndex != flickerIndex)
+            if (tp != LastTimingPointInfo || flickerIndex % 32 == 0 && LastFlickerIndex != flickerIndex)
+            {
+                PickToggleLanes();
+            } else if (LastFlickerIndex != flickerIndex)
             {
                 for (var i = 0; i < LaneVisibility.Length; i++)
                 {
                     LaneVisibility[i] = !LaneVisibility[i];
                 }
-                LastFlickerIndex = flickerIndex;
             }
 
             LastTimingPointInfo = tp;
+            LastFlickerIndex = flickerIndex;
         }
 
         /// <summary>
