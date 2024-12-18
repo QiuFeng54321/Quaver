@@ -32,6 +32,7 @@ using Quaver.Shared.Screens.Edit.Actions.Timing.RemoveBatch;
 using Quaver.Shared.Screens.Edit.Actions.TimingGroups.Create;
 using Quaver.Shared.Screens.Edit.Actions.TimingGroups.Remove;
 using Quaver.Shared.Screens.Edit.UI.Playfield.Timeline;
+using Wobble;
 using Wobble.Audio.Tracks;
 using Wobble.Graphics;
 
@@ -123,6 +124,8 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         /// <param name="gameTime"></param>
         public override void Draw(GameTime gameTime)
         {
+            // if (gameTime.IsRunningSlowly)
+                // return;
             for (var i = 0; i < LinePool.Count; i++)
             {
                 var line = LinePool[i];

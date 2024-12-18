@@ -17,7 +17,6 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         {
             ScrollSpeedFactor = sv;
             TimingGroup = timingGroup;
-            IsClickable = false;
             Rotation = 180;
         }
 
@@ -35,7 +34,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         /// </summary>
         public override void SetPosition()
         {
-            var x = Playfield.AbsolutePosition.X - DesiredWidth;
+            var x = Playfield.AbsolutePosition.X - DesiredWidth + Width / 2;
             var y = Playfield.HitPositionY - StartTime * Playfield.TrackSpeed - Height;
 
             // ReSharper disable once CompareOfFloatsByEqualityOperator

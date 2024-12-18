@@ -34,8 +34,6 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
             };
 
             Image = UserInterface.BlankBox;
-            Clicked += OnClicked;
-            RightClicked += OnRightClicked;
         }
         
         public override void Draw(GameTime gameTime)
@@ -67,7 +65,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
                 Height = height;
         }
 
-        protected override bool IsMouseInClickArea() => ScreenRectangle.Contains(Playfield.GetRelativeMousePosition());
+        protected bool IsMouseInClickArea() => ScreenRectangle.Contains(Playfield.GetRelativeMousePosition());
         
         private void OnClicked(object sender, EventArgs e) => DialogManager.Show(new EditorBookmarkDialog(Playfield.ActionManager, Playfield.Track, Bookmark));
 
