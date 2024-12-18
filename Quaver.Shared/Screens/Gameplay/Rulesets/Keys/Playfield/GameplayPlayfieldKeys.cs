@@ -243,7 +243,7 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.Playfield
             }
 
             // Case: Config = Split Scroll
-            if (direction.Equals(ScrollDirection.Split))
+            if (direction == ScrollDirection.Split)
             {
                 var halfIndex = (int)Math.Ceiling(keys / 2.0);
                 ScrollDirections = new ScrollDirection[keys];
@@ -253,6 +253,21 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.Playfield
                         ScrollDirections[i] = ScrollDirection.Up;
                     else
                         ScrollDirections[i] = ScrollDirection.Down;
+                }
+                return;
+            }
+
+            // Case: Config = Split Scroll
+            if (direction == ScrollDirection.SplitReverse)
+            {
+                var halfIndex = (int)Math.Floor(keys / 2.0);
+                ScrollDirections = new ScrollDirection[keys];
+                for (var i = 0; i < keys; i++)
+                {
+                    if (i >= halfIndex)
+                        ScrollDirections[i] = ScrollDirection.Down;
+                    else
+                        ScrollDirections[i] = ScrollDirection.Up;
                 }
                 return;
             }

@@ -275,6 +275,7 @@ namespace Quaver.Shared.Screens.Selection.UI.Preview
                 {
                     case ScrollDirection.Down:
                     case ScrollDirection.Split:
+                    case ScrollDirection.SplitReverse:
                         playfield.Container.Alignment = Alignment.BotLeft;
                         playfield.Container.Y = -MenuBorder.HEIGHT - Y;
 

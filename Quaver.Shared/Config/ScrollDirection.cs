@@ -15,6 +15,7 @@ namespace Quaver.Shared.Config
     {
         Down,
         Up,
-        Split
+        Split,
+        SplitReverse
     }
 }
