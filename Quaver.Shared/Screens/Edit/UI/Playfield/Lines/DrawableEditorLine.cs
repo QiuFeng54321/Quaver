@@ -45,6 +45,8 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         /// <returns></returns>
         public bool IsOnScreen() => StartTime * Playfield.TrackSpeed >= Playfield.TrackPositionY - Playfield.Height &&
                                     StartTime * Playfield.TrackSpeed <= Playfield.TrackPositionY + Playfield.Height;
+
+        public bool IsInPool { get; set; }
         
         /// <summary>
         ///     Returns the color of the tick
