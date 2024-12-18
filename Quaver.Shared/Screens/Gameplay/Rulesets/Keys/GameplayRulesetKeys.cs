@@ -93,6 +93,15 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys
                 TimingLineManagers.Add(new TimingLineManager(this, ScrollDirection.Up, playfield.TimingLinePositionY[halfIndex + 1], playfield.Width - halfPos, halfPos));
                 return;
             }
+
+            if (direction.Equals(ScrollDirection.SplitReverse))
+            {
+                var halfIndex = (int)Math.Floor(keys / 2.0) - 1;
+                var halfPos = playfield.Stage.Receptors[halfIndex].X + playfield.Stage.Receptors[halfIndex].Width;
+                TimingLineManagers.Add(new TimingLineManager(this, ScrollDirection.Up, playfield.TimingLinePositionY[0], halfPos, 0));
+                TimingLineManagers.Add(new TimingLineManager(this, ScrollDirection.Down, playfield.TimingLinePositionY[halfIndex + 1], playfield.Width - halfPos, halfPos));
+                return;
+            }
             TimingLineManagers.Add(new TimingLineManager(this, direction, playfield.TimingLinePositionY[0], playfield.Width, 0));
         }
 

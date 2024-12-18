@@ -335,7 +335,7 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.Playfield
                 case ScrollDirection.Up:
                     y = Playfield.ReceptorPositionY.First() + offsetY - Skin.HitPosOffsetY;
                     break;
-                case ScrollDirection.Split:
+                case ScrollDirection.Split or ScrollDirection.SplitReverse:
                     y = Playfield.ReceptorPositionY.First() - sizeY + Skin.HitPosOffsetY;
                     width = Playfield.Width / 2;
 
