@@ -40,6 +40,8 @@ namespace Quaver.Shared.Screens.Selection.UI.Modifiers
         /// </summary>
         private ImageButton ResetModifiersButton { get; set; }
 
+        const float ButtonHeight = 83;
+
         /// <summary>
         /// </summary>
         private ImageButton ClosePanelButton { get; set; }
@@ -55,6 +57,12 @@ namespace Quaver.Shared.Screens.Selection.UI.Modifiers
             ActiveLeftPanel = activeLeftPanel;
             Sections = sections;
             Alpha = 0;
+            InputEnabled = true;
+            Scrollbar.Width = 4;
+            Scrollbar.Tint = Color.White;
+            EasingType = Easing.OutQuint;
+            TimeToCompleteScroll = 1200;
+            ScrollSpeed = 220;
 
             AlignAndContainSections();
             CreateButtons();
@@ -100,6 +108,8 @@ namespace Quaver.Shared.Screens.Selection.UI.Modifiers
                     totalY += mod.Height;
                 }
             }
+            ContentContainer.Height = totalY;
+            Height -= ButtonHeight;
         }
 
         /// <summary>
@@ -110,8 +120,9 @@ namespace Quaver.Shared.Screens.Selection.UI.Modifiers
             {
                 Parent = this,
                 Alignment = Alignment.BotLeft,
-                Size = new ScalableVector2(Width, 83),
-                Tint = ColorHelper.HexToColor("#181818")
+                Size = new ScalableVector2(Width, ButtonHeight),
+                Tint = ColorHelper.HexToColor("#181818"),
+                Position = new ScalableVector2(0, ButtonHeight)
             };
 
             ResetModifiersButton = new IconButton(UserInterface.EditPlayButton, (sender, args) =>

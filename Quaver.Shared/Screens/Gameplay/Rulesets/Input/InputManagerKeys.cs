@@ -410,6 +410,10 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Input
                 SetPlayer1Keybinds(mode);
             else if (Ruleset.Screen.TournamentOptions != null)
                 SetPlayer2Keybinds(mode);
+            if (Ruleset.ScoreProcessor.Mods.HasFlag(ModIdentifier.TrueMirror))
+            {
+                BindingStore.Reverse();
+            }
         }
 
         /// <summary>

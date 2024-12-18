@@ -181,6 +181,9 @@ namespace Quaver.Shared.Modifiers
                     case ModIdentifier.NoMiss:
                         mods.Add(new ModNoMiss());
                         break;
+                    case ModIdentifier.TrueMirror:
+                        mods.Add(new ModTrueMirror());
+                        break;
                     default:
                         Logger.Warning($"Cannot convert {mod} to its appropriate IModifier class.", LogType.Runtime);
                         break;
