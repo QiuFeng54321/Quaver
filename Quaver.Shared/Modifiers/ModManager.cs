@@ -184,6 +184,9 @@ namespace Quaver.Shared.Modifiers
                     case ModIdentifier.TrueMirror:
                         mods.Add(new ModTrueMirror());
                         break;
+                    case ModIdentifier.MemoryFactory:
+                        mods.Add(new ModMemoryFactory());
+                        break;
                     default:
                         Logger.Warning($"Cannot convert {mod} to its appropriate IModifier class.", LogType.Runtime);
                         break;

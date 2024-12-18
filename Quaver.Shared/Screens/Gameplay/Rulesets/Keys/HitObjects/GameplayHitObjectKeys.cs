@@ -384,6 +384,18 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
         /// </summary>
         public void UpdateSpritePositions(double curTime)
         {
+            var memoryFactory = Ruleset.ScoreProcessor.Mods.HasFlag(ModIdentifier.MemoryFactory);
+            if (memoryFactory)
+            {
+                var visible = Info.TimingGroupController.Manager.LaneVisibility[Info.Lane - 1];
+                HitObjectSprite.Visible = visible;
+                if (!visible)
+                {
+                    Hide();
+                    return;
+                }
+            }
+
             Info.UpdatePositions(curTime);
             // Update Sprite position with regards to LN's state
             //

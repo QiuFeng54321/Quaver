@@ -117,6 +117,7 @@ namespace Quaver.Shared.Screens.Selection.UI.Modifiers
                             new SelectableModifierBool(width, new ModInverse()),
                             new SelectableModifierBool(width, new ModRandomize()),
                             new SelectableModifierBool(width, new ModTrueMirror()),
+                            new SelectableModifierBool(width, new ModMemoryFactory()),
                         }),
                 })
             {

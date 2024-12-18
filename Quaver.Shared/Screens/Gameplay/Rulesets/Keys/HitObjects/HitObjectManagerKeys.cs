@@ -121,6 +121,17 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
         /// </summary>
         public Dictionary<HitObjectInfo, List<HitStat>> HitStats { get; private set; }
 
+        public bool[] LaneVisibility { get; private set; }
+
+        public const int MinLaneFlickerDuration = 200;
+        public const int MaxLaneFlickerDuration = 500;
+        private float LaneFlickerDuration { get; set; }
+        private int[] ToggleLanes { get; set; }
+
+        private TimingPointInfo LastTimingPointInfo { get; set; }
+
+        private int LastFlickerIndex { get; set; } = -1;
+
         /// <summary>
         ///     Note alpha when showing hits.
         /// </summary>
@@ -268,6 +279,10 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
             Map = map.WithNormalizedSVs();
             Length = Map.Length;
             KeyCount = Map.GetKeyCount(Map.HasScratchKey);
+            LaneVisibility = new bool[Map.GetKeyCount()];
+            ToggleLanes = new int[Map.GetKeyCount() / 2];
+            Array.Fill(LaneVisibility, true);
+            PickToggleLanes();
 
             // Initialize SV
 
@@ -295,6 +310,33 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
             AudioEngine.Track.RateChanged += OnRateChanged;
             ConfigManager.ScrollSpeed4K.ValueChanged += On4KScrollSpeedChanged;
             ConfigManager.ScrollSpeed7K.ValueChanged += On7KScrollSpeedChanged;
+        }
+
+        private void PickToggleLanes()
+        {
+            for (var i = 0; i < ToggleLanes.Length; i++)
+            {
+                while (true)
+                {
+                    ToggleLanes[i] = Random.Shared.Next(0, Map.GetKeyCount());
+                    var isDuplicate = false;
+                    for (var j = 0; j < i; j++)
+                    {
+                        if (ToggleLanes[j] != ToggleLanes[i]) continue;
+                        isDuplicate = true;
+                        break;
+                    }
+
+                    if (!isDuplicate)
+                        break;
+                }
+            }
+
+            Array.Fill(LaneVisibility, false);
+            foreach (var lane in ToggleLanes)
+            {
+                LaneVisibility[lane] = true;
+            }
         }
 
         public override void Destroy()
@@ -720,6 +762,32 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
             {
                 controllerKeys.UpdateCurrentTrackPosition();
             }
+
+            if (!Ruleset.ScoreProcessor.Mods.HasFlag(ModIdentifier.MemoryFactory))
+                return;
+            var tp = Map.GetTimingPointAt(CurrentVisualAudioOffset);
+            var flickerIndex = (int)((CurrentVisualAudioOffset - tp.StartTime) / LaneFlickerDuration);
+            if (tp != LastTimingPointInfo || flickerIndex % 40 == 0)
+            {
+                PickToggleLanes();
+            }
+
+            LaneFlickerDuration = tp.MillisecondsPerBeat;
+            while (LaneFlickerDuration < MinLaneFlickerDuration)
+                LaneFlickerDuration *= 2;
+            while (LaneFlickerDuration > MaxLaneFlickerDuration)
+                LaneFlickerDuration /= 2;
+
+            if (LastFlickerIndex != flickerIndex)
+            {
+                for (var i = 0; i < LaneVisibility.Length; i++)
+                {
+                    LaneVisibility[i] = !LaneVisibility[i];
+                }
+                LastFlickerIndex = flickerIndex;
+            }
+
+            LastTimingPointInfo = tp;
         }
 
         /// <summary>
