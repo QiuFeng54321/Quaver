@@ -67,13 +67,12 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
         private List<TimingPointInfo> Clipboard { get; } = new List<TimingPointInfo>();
 
         /// <summary>
-        ///     If the panel has to scroll to the correct position
         /// </summary>
-        private bool NeedsToScrollToFirstSelectedPoint { get; set; }
+        private int? NeedsToScrollToFirstSelectedPoint { get; set; }
 
         /// <summary>
         /// </summary>
-        private bool NeedsToScrollToLastSelectedPoint { get; set; }
+        private int? NeedsToScrollToLastSelectedPoint { get; set; }
 
         /// <inheritdoc />
         /// <summary>
@@ -98,7 +97,7 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
                 SelectedTimingPoints.Add(point);
 
                 if (point != Screen.WorkingMap.TimingPoints.First())
-                    NeedsToScrollToFirstSelectedPoint = true;
+                    NeedsToScrollToFirstSelectedPoint = 0;
             }
         }
 
@@ -183,7 +182,7 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
 
                 Screen.ActionManager.PlaceTimingPoint(point);
                 SelectedTimingPoints.Add(point);
-                NeedsToScrollToFirstSelectedPoint = true;
+                NeedsToScrollToFirstSelectedPoint = Screen.WorkingMap.TimingPoints.IndexOf(point);
                 ImGui.SetKeyboardFocusHere(3);
             }
         }
@@ -209,6 +208,7 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
                 {
                     if (!SelectedTimingPoints.Contains(newPoint))
                         SelectedTimingPoints.Add(newPoint);
+                    NeedsToScrollToFirstSelectedPoint = Screen.WorkingMap.TimingPoints.IndexOf(newPoint);
                 }
                 else if (Screen.WorkingMap.TimingPoints.Count > 0)
                 {
@@ -216,9 +216,10 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
 
                     if (!SelectedTimingPoints.Contains(point))
                         SelectedTimingPoints.Add(point);
+
+                    NeedsToScrollToFirstSelectedPoint = 0;
                 }
 
-                NeedsToScrollToFirstSelectedPoint = true;
             }
         }
 
@@ -231,7 +232,7 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
                 var currentPoint = Screen.WorkingMap.GetTimingPointAt(Screen.Track.Time);
                 if (currentPoint != null)
                 {
-                    NeedsToScrollToLastSelectedPoint = true;
+                    NeedsToScrollToLastSelectedPoint = Screen.WorkingMap.TimingPoints.IndexOf(currentPoint);
 
                     var newSelection = new List<TimingPointInfo> { currentPoint };
 
@@ -379,160 +380,135 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
 
         /// <summary>
         /// </summary>
-        private void DrawTable()
+        private unsafe void DrawTable()
         {
-            DrawTableHeader();
-            DrawTableColumns();
-        }
+            if (!ImGui.BeginTable("##TPTable", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingStretchSame))
+            {
+                IsWindowHovered = ImGui.IsWindowHovered() || ImGui.IsAnyItemFocused();
+                return;
+            }
 
-        /// <summary>
-        /// </summary>
-        private void DrawTableHeader()
-        {
-            ImGui.Columns(4);
-            ImGui.SetColumnWidth(0, 160);
-            ImGui.TextWrapped("Time");
-            ImGui.NextColumn();
-            ImGui.TextWrapped("BPM");
-            ImGui.NextColumn();
-            ImGui.TextWrapped("Signature");
-            ImGui.NextColumn();
-            ImGui.TextWrapped("Hide Lines");
-            ImGui.Columns();
-            ImGui.Separator();
-        }
-
-        /// <summary>
-        /// </summary>
-        private void DrawTableColumns()
-        {
-            ImGui.BeginChild("Timing Point Area");
-
-            ImGui.Columns(4);
-            ImGui.SetColumnWidth(0, 160);
-
-            if ((NeedsToScrollToFirstSelectedPoint || NeedsToScrollToLastSelectedPoint) &&
+            ImGui.TableSetupScrollFreeze(0, 1);
+            ImGui.TableSetupColumn("Time");
+            ImGui.TableSetupColumn("BPM");
+            ImGui.TableSetupColumn("Signature");
+            ImGui.TableSetupColumn("Hide Lines");
+            ImGui.TableHeadersRow();
+            if ((NeedsToScrollToFirstSelectedPoint.HasValue || NeedsToScrollToLastSelectedPoint.HasValue) &&
                 SelectedTimingPoints.Count != 0 &&
                 Screen.WorkingMap.TimingPoints.Count == 0)
             {
                 ImGui.SetScrollHereY(-0.025f);
-                NeedsToScrollToFirstSelectedPoint = false;
-                NeedsToScrollToLastSelectedPoint = false;
+                NeedsToScrollToFirstSelectedPoint = null;
+                NeedsToScrollToLastSelectedPoint = null;
             }
 
-            const int ElementBaseHeight = 12;
-            const int NumberOfColumns = 4;
-            var elementHeight = Screen.ImGuiScale * ElementBaseHeight;
-            var y = ImGui.GetContentRegionAvail().Y;
+            var clipperRaw = new ImGuiListClipper();
+            var clipper = new ImGuiListClipperPtr(&clipperRaw);
+            clipper.Begin(Screen.WorkingMap.TimingPoints.Count);
 
-            var start = Math.Min(
-                (int)(_progress * Screen.WorkingMap.TimingPoints.Count - 1),
-                Screen.WorkingMap.TimingPoints.Count - (int)(y / elementHeight)
-            );
-
-            for (var j = 0; j < NumberOfColumns; j++)
+            if (NeedsToScrollToLastSelectedPoint.HasValue)
             {
-                ImGui.Dummy(new(0, start * elementHeight));
-                ImGui.NextColumn();
+                clipper.IncludeItemByIndex(NeedsToScrollToLastSelectedPoint.Value);
             }
 
-            var end = Math.Min((int)(y / elementHeight) + start + 1, Screen.WorkingMap.TimingPoints.Count);
-
-            for (var i = Math.Max(start, 0); i < end; i++)
+            if (NeedsToScrollToFirstSelectedPoint.HasValue)
             {
-                // https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-why-is-my-widget-not-reacting-when-i-click-on-it
-                // allows all timing points with same truncated time to be selected, instead of just the first in list
-                ImGui.PushID(i);
+                clipper.IncludeItemByIndex(NeedsToScrollToFirstSelectedPoint.Value);
+            }
 
-                var point = Screen.WorkingMap.TimingPoints[i];
-                var isSelected = SelectedTimingPoints.Contains(point);
-
-                if (!isSelected)
-                    ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(100, 100, 100, 0));
-
-                if (SelectedTimingPoints.Count != 0)
+            while (clipper.Step())
+            {
+                for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                 {
-                    // Last selected takes precedence over first selected, since it's initiated via a button press
-                    if (NeedsToScrollToLastSelectedPoint &&
-                        SelectedTimingPoints[^1] == point &&
-                        !NeedsToScrollToFirstSelectedPoint)
-                    {
-                        ImGui.SetScrollHereY(-0.025f);
-                        NeedsToScrollToLastSelectedPoint = false;
-                    }
-                    else if (NeedsToScrollToFirstSelectedPoint && SelectedTimingPoints[0] == point)
-                    {
-                        ImGui.SetScrollHereY(-0.025f);
-                        NeedsToScrollToFirstSelectedPoint = false;
-                    }
-                }
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    // https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-why-is-my-widget-not-reacting-when-i-click-on-it
+                    // allows all SVs with same truncated time to be selected, instead of just the first in list
+                    ImGui.PushID(i);
+                    var point = Screen.WorkingMap.TimingPoints[i];
+                    var isSelected = SelectedTimingPoints.Contains(point);
 
-                if (ImGui.Button($@"{TimeSpan.FromMilliseconds(point.StartTime):mm\:ss\.fff}"))
-                {
-                    // User holds down control, so add/remove it from the currently list of selected points
-                    if (KeyboardManager.IsCtrlDown())
+                    if (!isSelected)
+                        ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(100, 100, 100, 0));
+
+
+                    if (SelectedTimingPoints.Count != 0)
                     {
-                        if (isSelected)
-                            SelectedTimingPoints.Remove(point);
-                        else if (!SelectedTimingPoints.Contains(point))
+                        // Last selected takes precedence over first selected, since it's initiated via a button press
+                        if (NeedsToScrollToLastSelectedPoint.HasValue &&
+                            SelectedTimingPoints[^1] == point &&
+                            !NeedsToScrollToFirstSelectedPoint.HasValue)
+                        {
+                            ImGui.SetScrollHereY(-0.025f);
+                            NeedsToScrollToLastSelectedPoint = null;
+                        }
+                        else if (NeedsToScrollToFirstSelectedPoint.HasValue && SelectedTimingPoints[0] == point)
+                        {
+                            ImGui.SetScrollHereY(-0.025f);
+                            NeedsToScrollToFirstSelectedPoint = null;
+                        }
+                    }
+
+                    if (ImGui.Button($@"{TimeSpan.FromMilliseconds(point.StartTime):mm\:ss\.fff}"))
+                    {
+                        // User holds down control, so add/remove it from the currently list of selected points
+                        if (KeyboardManager.IsCtrlDown())
+                        {
+                            if (isSelected)
+                                SelectedTimingPoints.Remove(point);
+                            else if (!SelectedTimingPoints.Contains(point))
+                                SelectedTimingPoints.Add(point);
+                        }
+                        // User holds down shift, so range select if the clicked element is outside the bounds of the currently selected points
+                        else if ((KeyboardManager.CurrentState.IsKeyDown(Keys.LeftShift) ||
+                                  KeyboardManager.CurrentState.IsKeyDown(Keys.RightShift)) &&
+                                 SelectedTimingPoints.Count > 0)
+                        {
+                            var min = SelectedTimingPoints.Min().StartTime;
+                            var max = SelectedTimingPoints.Max().StartTime;
+
+                            if (point.StartTime < min)
+                                SelectedTimingPoints.AddRange(
+                                    Screen.WorkingMap.TimingPoints.Where(
+                                        v => v.StartTime >= point.StartTime && v.StartTime < min
+                                    )
+                                );
+                            else if (point.StartTime > max)
+                                SelectedTimingPoints.AddRange(
+                                    Screen.WorkingMap.TimingPoints.Where(
+                                        v => v.StartTime > max && v.StartTime <= point.StartTime
+                                    )
+                                );
+                        }
+                        else
+                        {
+                            if (isSelected)
+                                Screen.Track.Seek(point.StartTime);
+
+                            SelectedTimingPoints.Clear();
                             SelectedTimingPoints.Add(point);
+                        }
                     }
-                    // User holds down shift, so range select if the clicked element is outside the bounds of the currently selected points
-                    else if ((KeyboardManager.CurrentState.IsKeyDown(Keys.LeftShift) ||
-                            KeyboardManager.CurrentState.IsKeyDown(Keys.RightShift)) &&
-                        SelectedTimingPoints.Count > 0)
-                    {
-                        var min = SelectedTimingPoints.Min().StartTime;
-                        var max = SelectedTimingPoints.Max().StartTime;
 
-                        if (point.StartTime < min)
-                            SelectedTimingPoints.AddRange(
-                                Screen.WorkingMap.TimingPoints.Where(
-                                    v => v.StartTime >= point.StartTime && v.StartTime < min
-                                )
-                            );
-                        else if (point.StartTime > max)
-                            SelectedTimingPoints.AddRange(
-                                Screen.WorkingMap.TimingPoints.Where(
-                                    v => v.StartTime > max && v.StartTime <= point.StartTime
-                                )
-                            );
-                    }
-                    else
-                    {
-                        if (isSelected)
-                            Screen.Track.Seek(point.StartTime);
+                    if (!isSelected)
+                        ImGui.PopStyleColor();
 
-                        SelectedTimingPoints.Clear();
-                        SelectedTimingPoints.Add(point);
-                    }
+                    ImGui.TableNextColumn();
+                    ImGui.TextWrapped($"{point.Bpm:0.00}");
+
+                    ImGui.TableNextColumn();
+                    ImGui.TextWrapped($"{(int)point.Signature}/4");
+
+                    ImGui.TableNextColumn();
+                    var hidden = point.Hidden;
+
+                    if (ImGui.Checkbox($"##{point.StartTime}", ref hidden))
+                        Screen.ActionManager.ChangeTimingPointHidden(point, hidden);
+
+                    ImGui.PopID();
                 }
-
-                if (!isSelected)
-                    ImGui.PopStyleColor();
-
-                ImGui.NextColumn();
-                ImGui.TextWrapped($"{point.Bpm:0.00}");
-
-                ImGui.NextColumn();
-                ImGui.TextWrapped($"{(int)point.Signature}/4");
-
-                ImGui.NextColumn();
-                var hidden = point.Hidden;
-
-                if (ImGui.Checkbox($"##{point.StartTime}", ref hidden))
-                    Screen.ActionManager.ChangeTimingPointHidden(point, hidden);
-
-                ImGui.NextColumn();
-                ImGui.PopID();
             }
-
-            for (var j = 0; j < NumberOfColumns; j++)
-            {
-                ImGui.Dummy(new(0, (Screen.WorkingMap.TimingPoints.Count - end) * elementHeight));
-                ImGui.NextColumn();
-            }
-
             _progress = ImGui.GetScrollY() / ImGui.GetScrollMaxY();
 
             if (float.IsNaN(_progress))
@@ -540,7 +516,148 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
 
             IsWindowHovered = ImGui.IsWindowHovered() || ImGui.IsAnyItemFocused();
             HandleInput();
-            ImGui.EndChild();
+            ImGui.EndTable();
+        }
+
+        /// <summary>
+        /// </summary>
+        private unsafe void DrawTableColumns()
+        {
+            if (!ImGui.BeginTable("##TPTable", 2, ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingStretchSame))
+            {
+                IsWindowHovered = ImGui.IsWindowHovered() || ImGui.IsAnyItemFocused();
+                return;
+            }
+
+            ImGui.TableSetupScrollFreeze(0, 1);
+            ImGui.TableSetupColumn("Time");
+            ImGui.TableSetupColumn("BPM");
+            ImGui.TableSetupColumn("Signature");
+            ImGui.TableSetupColumn("Hide Lines");
+            ImGui.TableHeadersRow();
+            if ((NeedsToScrollToFirstSelectedPoint.HasValue || NeedsToScrollToLastSelectedPoint.HasValue) &&
+                SelectedTimingPoints.Count != 0 &&
+                Screen.WorkingMap.TimingPoints.Count == 0)
+            {
+                ImGui.SetScrollHereY(-0.025f);
+                NeedsToScrollToFirstSelectedPoint = null;
+                NeedsToScrollToLastSelectedPoint = null;
+            }
+
+            var clipperRaw = new ImGuiListClipper();
+            var clipper = new ImGuiListClipperPtr(&clipperRaw);
+            clipper.Begin(Screen.WorkingMap.TimingPoints.Count);
+
+            if (NeedsToScrollToLastSelectedPoint.HasValue)
+            {
+                clipper.IncludeItemByIndex(NeedsToScrollToLastSelectedPoint.Value);
+            }
+
+            if (NeedsToScrollToFirstSelectedPoint.HasValue)
+            {
+                clipper.IncludeItemByIndex(NeedsToScrollToFirstSelectedPoint.Value);
+            }
+
+            while (clipper.Step())
+            {
+                for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                {
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    // https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-why-is-my-widget-not-reacting-when-i-click-on-it
+                    // allows all SVs with same truncated time to be selected, instead of just the first in list
+                    ImGui.PushID(i);
+                    var point = Screen.WorkingMap.TimingPoints[i];
+                    var isSelected = SelectedTimingPoints.Contains(point);
+
+                    if (!isSelected)
+                        ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(100, 100, 100, 0));
+
+
+                    if (SelectedTimingPoints.Count != 0)
+                    {
+                        // Last selected takes precedence over first selected, since it's initiated via a button press
+                        if (NeedsToScrollToLastSelectedPoint.HasValue &&
+                            SelectedTimingPoints[^1] == point &&
+                            !NeedsToScrollToFirstSelectedPoint.HasValue)
+                        {
+                            ImGui.SetScrollHereY(-0.025f);
+                            NeedsToScrollToLastSelectedPoint = null;
+                        }
+                        else if (NeedsToScrollToFirstSelectedPoint.HasValue && SelectedTimingPoints[0] == point)
+                        {
+                            ImGui.SetScrollHereY(-0.025f);
+                            NeedsToScrollToFirstSelectedPoint = null;
+                        }
+                    }
+
+                    if (ImGui.Button($@"{TimeSpan.FromMilliseconds(point.StartTime):mm\:ss\.fff}"))
+                    {
+                        // User holds down control, so add/remove it from the currently list of selected points
+                        if (KeyboardManager.IsCtrlDown())
+                        {
+                            if (isSelected)
+                                SelectedTimingPoints.Remove(point);
+                            else if (!SelectedTimingPoints.Contains(point))
+                                SelectedTimingPoints.Add(point);
+                        }
+                        // User holds down shift, so range select if the clicked element is outside the bounds of the currently selected points
+                        else if ((KeyboardManager.CurrentState.IsKeyDown(Keys.LeftShift) ||
+                                  KeyboardManager.CurrentState.IsKeyDown(Keys.RightShift)) &&
+                                 SelectedTimingPoints.Count > 0)
+                        {
+                            var min = SelectedTimingPoints.Min().StartTime;
+                            var max = SelectedTimingPoints.Max().StartTime;
+
+                            if (point.StartTime < min)
+                                SelectedTimingPoints.AddRange(
+                                    Screen.WorkingMap.TimingPoints.Where(
+                                        v => v.StartTime >= point.StartTime && v.StartTime < min
+                                    )
+                                );
+                            else if (point.StartTime > max)
+                                SelectedTimingPoints.AddRange(
+                                    Screen.WorkingMap.TimingPoints.Where(
+                                        v => v.StartTime > max && v.StartTime <= point.StartTime
+                                    )
+                                );
+                        }
+                        else
+                        {
+                            if (isSelected)
+                                Screen.Track.Seek(point.StartTime);
+
+                            SelectedTimingPoints.Clear();
+                            SelectedTimingPoints.Add(point);
+                        }
+                    }
+
+                    if (!isSelected)
+                        ImGui.PopStyleColor();
+
+                    ImGui.TableNextColumn();
+                    ImGui.TextWrapped($"{point.Bpm:0.00}");
+
+                    ImGui.TableNextColumn();
+                    ImGui.TextWrapped($"{(int)point.Signature}/4");
+
+                    ImGui.TableNextColumn();
+                    var hidden = point.Hidden;
+
+                    if (ImGui.Checkbox($"##{point.StartTime}", ref hidden))
+                        Screen.ActionManager.ChangeTimingPointHidden(point, hidden);
+
+                    ImGui.PopID();
+                }
+            }
+            _progress = ImGui.GetScrollY() / ImGui.GetScrollMaxY();
+
+            if (float.IsNaN(_progress))
+                _progress = 0;
+
+            IsWindowHovered = ImGui.IsWindowHovered() || ImGui.IsAnyItemFocused();
+            HandleInput();
+            ImGui.EndTable();
         }
 
         /// <summary>
@@ -608,6 +725,9 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
         /// </summary>
         private void PasteClipboard()
         {
+            if (Clipboard.Count == 0)
+                return;
+
             var clonedObjects = new List<TimingPointInfo>();
 
             var pasteTime = Clipboard.Select(x => x.StartTime).Min();
@@ -631,7 +751,7 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
             Screen.ActionManager.PlaceTimingPointBatch(clonedObjects);
             SelectedTimingPoints.Clear();
             SelectedTimingPoints.AddRange(clonedObjects);
-            NeedsToScrollToFirstSelectedPoint = true;
+            NeedsToScrollToFirstSelectedPoint = Screen.WorkingMap.TimingPoints.IndexOf(clonedObjects[0]);
         }
 
         /// <summary>
