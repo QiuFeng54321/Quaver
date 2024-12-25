@@ -2,9 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
-using MonoGame.Extended.Collections;
-using MonoGame.Extended.Timers;
-using Quaver.API.Helpers;
 using Quaver.API.Maps;
 using Quaver.Shared.Assets;
 using Quaver.Shared.Config;
@@ -72,18 +69,12 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Timeline
         /// <summary>
         ///     The lines that are visible and ready to be drawn to the screen
         /// </summary>
-        private Deque<EditorPlayfieldTimelineTick> LinePool { get; set; }
-
-        private List<EditorPlayfieldTimelineTick> MeasureLines { get; set; } = new();
+        private List<EditorPlayfieldTimelineTick> LinePool { get; set; }
 
         /// <summary>
         ///     The index of the last object that was added to the pool
         /// </summary>
         private int LastPooledLineIndex { get; set; } = -1;
-
-        private readonly ContinuousClock _removeLinesClock = new(0.3);
-
-        public int MaximumLineCount => 750;
 
         /// <summary>
         /// </summary>
@@ -124,19 +115,13 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Timeline
             ActionManager.TimingPointBpmBatchChanged += OnTimingPointBpmBatchChanged;
             ActionManager.TimingPointSignatureChanged += OnTimingPointSignatureChanged;
             ActionManager.TimingPointSignatureBatchChanged += OnTimingPointSignatureBatchChanged;
-            _removeLinesClock.Tick += RemoveLines;
-            _removeLinesClock.Start();
         }
 
         /// <inheritdoc />
         /// <summary>
         /// </summary>
         /// <param name="gameTime"></param>
-        public override void Update(GameTime gameTime)
-        {
-            _removeLinesClock.Update(gameTime);
-            UpdateLinePool();
-        }
+        public override void Update(GameTime gameTime) => UpdateLinePool();
 
         /// <inheritdoc />
         /// <summary>
@@ -167,34 +152,8 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Timeline
             ActionManager.TimingPointBpmBatchChanged -= OnTimingPointBpmBatchChanged;
             ActionManager.TimingPointSignatureChanged -= OnTimingPointSignatureChanged;
             ActionManager.TimingPointSignatureBatchChanged -= OnTimingPointSignatureBatchChanged;
-            _removeLinesClock.Tick -= RemoveLines;
 
             base.Destroy();
-        }
-
-        private void RemoveLines(object sender, EventArgs e)
-        {
-            // Check the objects that are in the pool currently to see if they're still in view.
-            // if they're not, remove them.
-            while(LinePool.GetFront(out var item) && !item.IsOnScreen())
-            {
-                LinePool.RemoveFromFront();
-            }
-            
-            var minTime = (Playfield.TrackPositionY - Playfield.Height) / Playfield.TrackSpeed;
-            var maxTime = (Playfield.TrackPositionY + Playfield.Height) / Playfield.TrackSpeed;
-            var minIndex = Lines.IndexAtTimeBefore(minTime);
-            var maxIndex = Lines.IndexAtTime(maxTime);
-            for (var i = Math.Max(LastPooledLineIndex, minIndex); i <= maxIndex; i++)
-            {
-                var line = Lines[i];
-
-                if (!line.IsOnScreen())
-                    continue;
-
-                LinePool.AddToBack(line);
-                LastPooledLineIndex = i;
-            }
         }
 
         /// <summary>
@@ -209,7 +168,6 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Timeline
             }
 
             var lines = new List<EditorPlayfieldTimelineTick>();
-            MeasureLines.Clear();
 
             // Keeps track of the total amount of measures in the song.
             var measureCount = 0;
@@ -262,7 +220,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Timeline
 
                     var height = measureBeat ? 5 : 2;
 
-                    var tick = new EditorPlayfieldTimelineTick(Playfield, tp, time, i, measureCount, measureBeat && time >= tp.StartTime)
+                    lines.Add(new EditorPlayfieldTimelineTick(Playfield, tp, time, i, measureCount, measureBeat && time >= tp.StartTime)
                     {
                         Image = UserInterface.BlankBox,
                         Size = new ScalableVector2(Playfield.Width - 4, 0),
@@ -270,10 +228,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Timeline
                         Y = Playfield.HitPositionY - time * Playfield.TrackSpeed - height,
                         Tint = GetLineColor(i % BeatSnap.Value, i),
                         Height = height
-                    };
-                    lines.Add(tick);
-                    if (tick.IsMeasureLine)
-                        MeasureLines.Add(tick);
+                    });
                 }
             }
 
@@ -287,7 +242,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Timeline
         /// </summary>
         private void InitializeLinePool()
         {
-            LinePool = new Deque<EditorPlayfieldTimelineTick>();
+            LinePool = new List<EditorPlayfieldTimelineTick>();
             LastPooledLineIndex = -1;
 
             for (var i = 0; i < Lines.Count; i++)
@@ -297,7 +252,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Timeline
                 if (!line.IsOnScreen())
                     continue;
 
-                LinePool.AddToBack(line);
+                LinePool.Add(line);
                 LastPooledLineIndex = i;
             }
         }
@@ -307,6 +262,27 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Timeline
         /// </summary>
         private void UpdateLinePool()
         {
+            // Check the objects that are in the pool currently to see if they're still in view.
+            // if they're not, remove them.
+            for (var i = LinePool.Count - 1; i >= 0; i--)
+            {
+                var line = LinePool[i];
+
+                if (!line.IsOnScreen())
+                    LinePool.Remove(line);
+            }
+
+            // Add any objects that are now on-screen
+            for (var i = LastPooledLineIndex + 1; i < Lines.Count; i++)
+            {
+                var line = Lines[i];
+
+                if (!line.IsOnScreen())
+                    break;
+
+                LinePool.Add(line);
+                LastPooledLineIndex = i;
+            }
         }
 
         /// <summary>
@@ -319,16 +295,16 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Timeline
             for (var i = 0; i < LinePool.Count; i++)
             {
                 var line = LinePool[i];
-                var previous = MeasureLines.IndexAtTimeBefore(line.StartTime);
-                var next = MeasureLines.IndexAtTime(line.StartTime) + 1;
+                var previous = LinePool.FindLastIndex(i, i, x => x.IsMeasureLine);
+                var next = LinePool.FindIndex(i + 1, LinePool.Count - i - 1, x => x.IsMeasureLine);
                 line.SetPosition();
                 line.Tint = GetLineColor(line.Index % BeatSnap.Value, line.Index);
 
                 if (line.IsOnScreen() &&
                     (previous is -1 ||
-                        next >= MeasureLines.Count ||
-                        MeasureLines[previous].Y - line.Y > minimumDistanceToDraw ||
-                        line.Y - MeasureLines[next].Y > minimumDistanceToDraw))
+                        next is -1 ||
+                        LinePool[previous].Y - line.Y > minimumDistanceToDraw ||
+                        line.Y - LinePool[next].Y > minimumDistanceToDraw))
                     line.Draw(gameTime);
             }
         }

@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
-using MonoGame.Extended.Collections;
-using MonoGame.Extended.Timers;
 using MoreLinq.Extensions;
 using Quaver.API.Helpers;
 using Quaver.API.Maps;
@@ -58,7 +56,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         /// <summary>
         ///     The lines that are visible and ready to be drawn to the screen
         /// </summary>
-        private Deque<DrawableEditorLine> LinePool { get; set; }
+        private List<DrawableEditorLine> LinePool { get; set; }
 
         /// <summary>
         /// </summary>
@@ -68,10 +66,6 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         ///     The index of the last object that was added to the pool
         /// </summary>
         private int LastPooledLineIndex { get; set; } = -1;
-
-        private readonly ContinuousClock _removeLinesClock = new(0.3);
-
-        public int MaximumLineCount => 1500;
 
         /// <summary>
         /// </summary>
@@ -112,35 +106,6 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
             ActionManager.BookmarkBatchOffsetChanged += OnBookmarkBatchOffsetChanged;
             ActionManager.TimingGroupCreated += OnTimingGroupCreated;
             ActionManager.TimingGroupDeleted += OnTimingGroupDeleted;
-            _removeLinesClock.Tick += RemoveLines;
-            _removeLinesClock.Start();
-        }
-
-        private void RemoveLines(object sender, EventArgs e)
-        {
-            // Check the objects that are in the pool currently to see if they're still in view.
-            // if they're not, remove them.
-            while(LinePool.GetFront(out var item) && !item.IsOnScreen())
-            {
-                LinePool.RemoveFromFront();
-                item.IsInPool = false;
-            }
-            var minTime = (Playfield.TrackPositionY - Playfield.Height) / Playfield.TrackSpeed;
-            var maxTime = (Playfield.TrackPositionY + Playfield.Height) / Playfield.TrackSpeed;
-            var minIndex = Lines.IndexAtTimeBefore(minTime);
-            var maxIndex = Lines.IndexAtTime(maxTime);
-            for (var i = minIndex; i <= maxIndex; i++)
-            {
-                var line = Lines[i];
-
-                if (line.IsInPool)
-                    continue;
-
-                LinePool.AddToBack(line);
-                line.IsInPool = true;
-                LastPooledLineIndex = i;
-            }
-
         }
         
         /// <inheritdoc />
@@ -149,7 +114,6 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         /// <param name="gameTime"></param>
         public override void Update(GameTime gameTime)
         {
-            _removeLinesClock.Update(gameTime);
             UpdateLinePool(gameTime);
             base.Update(gameTime);
         }
@@ -160,6 +124,8 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         /// <param name="gameTime"></param>
         public override void Draw(GameTime gameTime)
         {
+            // if (gameTime.IsRunningSlowly)
+                // return;
             for (var i = 0; i < LinePool.Count; i++)
             {
                 var line = LinePool[i];
@@ -212,7 +178,6 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
             ActionManager.BookmarkBatchOffsetChanged -= OnBookmarkBatchOffsetChanged;
             ActionManager.TimingGroupCreated -= OnTimingGroupCreated;
             ActionManager.TimingGroupDeleted -= OnTimingGroupDeleted;
-            _removeLinesClock.Tick -= RemoveLines;
             
             base.Destroy();
         }
@@ -258,22 +223,17 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         /// </summary>
         private void InitializeLinePool()
         {
-            LinePool = new Deque<DrawableEditorLine>();
+            LinePool = new List<DrawableEditorLine>();
             LastPooledLineIndex = -1;
 
-            var minTime = (Playfield.TrackPositionY - Playfield.Height) / Playfield.TrackSpeed;
-            var maxTime = (Playfield.TrackPositionY + Playfield.Height) / Playfield.TrackSpeed;
-            var minIndex = Lines.IndexAtTimeBefore(minTime);
-            var maxIndex = Lines.IndexAtTime(maxTime);
-            for (var i = minIndex; i <= maxIndex; i++)
+            for (var i = 0; i < Lines.Count; i++)
             {
                 var line = Lines[i];
 
                 if (!line.IsOnScreen())
                     continue;
 
-                LinePool.AddToBack(line);
-                line.IsInPool = true;
+                LinePool.Add(line);
                 LastPooledLineIndex = i;
             }
 
@@ -286,9 +246,27 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         /// </summary>
         private void UpdateLinePool(GameTime gameTime)
         {
-            foreach (var line in LinePool)
+            // Check the objects that are in the pool currently to see if they're still in view.
+            // if they're not, remove them.
+            for (var i = LinePool.Count - 1; i >= 0; i--)
             {
+                var line = LinePool[i];
                 line.Update(gameTime);
+
+                if (!line.IsOnScreen())
+                    LinePool.Remove(line);
+            }
+
+            // Add any objects that are now on-screen
+            for (var i = LastPooledLineIndex + 1; i < Lines.Count; i++)
+            {
+                var line = Lines[i];
+
+                if (!line.IsOnScreen())
+                    break;
+
+                LinePool.Add(line);
+                LastPooledLineIndex = i;
             }
         }
 
