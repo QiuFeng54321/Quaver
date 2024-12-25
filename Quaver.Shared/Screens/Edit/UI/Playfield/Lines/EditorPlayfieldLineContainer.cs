@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
+using MonoGame.Extended.Timers;
 using MoreLinq.Extensions;
 using Quaver.API.Helpers;
 using Quaver.API.Maps;
 using Quaver.API.Maps.Structures;
+using Quaver.Shared.Graphics.Notifications;
 using Quaver.Shared.Screens.Edit.Actions;
 using Quaver.Shared.Screens.Edit.Actions.Bookmarks;
 using Quaver.Shared.Screens.Edit.Actions.Bookmarks.Add;
@@ -68,6 +70,26 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         private int LastPooledLineIndex { get; set; } = -1;
 
         /// <summary>
+        ///     Removing lines is a costly operation, so we only do it every 0.5 seconds
+        /// </summary>
+        private ContinuousClock RemoveTimer { get; } = new(0.5f);
+
+        /// <summary>
+        ///     Whether or not dense lines have been detected
+        /// </summary>
+        private bool DenseLinesDetected { get; set; }
+
+        /// <summary>
+        ///     The update frame counter for the line container
+        /// </summary>
+        private int _frameCounter;
+
+        /// <summary>
+        ///     The number of frames per actual line draw
+        /// </summary>
+        private int FrameSkipFactor => Math.ILogB(Math.Max(1, LinePool.Count / 1024)) + 1;
+
+        /// <summary>
         /// </summary>
         /// <param name="playfield"></param>
         /// <param name="map"></param>
@@ -106,6 +128,8 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
             ActionManager.BookmarkBatchOffsetChanged += OnBookmarkBatchOffsetChanged;
             ActionManager.TimingGroupCreated += OnTimingGroupCreated;
             ActionManager.TimingGroupDeleted += OnTimingGroupDeleted;
+            RemoveTimer.Tick += RemoveLines;
+            RemoveTimer.Start();
         }
         
         /// <inheritdoc />
@@ -114,6 +138,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         /// <param name="gameTime"></param>
         public override void Update(GameTime gameTime)
         {
+            RemoveTimer.Update(gameTime);
             UpdateLinePool(gameTime);
             base.Update(gameTime);
         }
@@ -124,9 +149,11 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
         /// <param name="gameTime"></param>
         public override void Draw(GameTime gameTime)
         {
-            // if (gameTime.IsRunningSlowly)
-                // return;
-            for (var i = 0; i < LinePool.Count; i++)
+            // Skip frame if we're lagging
+            if (gameTime.ElapsedGameTime.TotalMilliseconds > 50f && _frameCounter % FrameSkipFactor != 0)
+                return;
+
+            for (var i = 0; i < LinePool.Count; i ++)
             {
                 var line = LinePool[i];
 
@@ -178,6 +205,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
             ActionManager.BookmarkBatchOffsetChanged -= OnBookmarkBatchOffsetChanged;
             ActionManager.TimingGroupCreated -= OnTimingGroupCreated;
             ActionManager.TimingGroupDeleted -= OnTimingGroupDeleted;
+            RemoveTimer.Tick -= RemoveLines;
             
             base.Destroy();
         }
@@ -241,20 +269,42 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield.Lines
                 LastPooledLineIndex = Lines.FindLastIndex(x => x.StartTime < Track.Time);
         }
 
-        /// <summary>
-        ///     Updates the object pool to get rid of old/out of view objects
-        /// </summary>
-        private void UpdateLinePool(GameTime gameTime)
+        private void RemoveLines(object sender, EventArgs eventArgs)
         {
+            if (LinePool.Count > 4096)
+            {
+                LinePool = LinePool.FindAll(l => l.IsOnScreen());
+                return;
+            }
             // Check the objects that are in the pool currently to see if they're still in view.
             // if they're not, remove them.
             for (var i = LinePool.Count - 1; i >= 0; i--)
             {
                 var line = LinePool[i];
-                line.Update(gameTime);
 
                 if (!line.IsOnScreen())
                     LinePool.Remove(line);
+            }
+        }
+
+        /// <summary>
+        ///     Updates the object pool to get rid of old/out of view objects
+        /// </summary>
+        private void UpdateLinePool(GameTime gameTime)
+        {
+            if (!DenseLinesDetected && FrameSkipFactor > 1)
+            {
+                DenseLinesDetected = true;
+                NotificationManager.Show(NotificationLevel.Warning, "Dense lines detected. Lines will be drawn less frequently.");
+            }
+            
+            if (_frameCounter++ % FrameSkipFactor != 0)
+                return;
+
+            for (var i = 0; i < LinePool.Count; i++)
+            {
+                var line = LinePool[i];
+                line.Update(gameTime);
             }
 
             // Add any objects that are now on-screen
