@@ -355,6 +355,11 @@ namespace Quaver.Shared.Screens.Edit
                 : WorkingMap.DefaultScrollGroup;
 
         /// <summary>
+        ///     Color Generator for colored things
+        /// </summary>
+        private PaulToulColorGenerator ColorGenerator { get; } = new();
+
+        /// <summary>
         /// </summary>
         public EditScreen(Map map, IAudioTrack track = null, EditorVisualTestBackground visualTestBackground = null)
         {
@@ -411,6 +416,7 @@ namespace Quaver.Shared.Screens.Edit
 
         public void ResetInputManager()
         {
+            InputManager?.Destroy();
             InputManager = new EditorInputManager(this);
         }
 
@@ -551,6 +557,8 @@ namespace Quaver.Shared.Screens.Edit
             SkinManager.SkinLoaded -= OnSkinLoaded;
 
             Plugins.ForEach(x => x.Destroy());
+            
+            InputManager?.Destroy();
 
             base.Destroy();
         }
@@ -739,14 +747,17 @@ namespace Quaver.Shared.Screens.Edit
 
         public void SeekToStart(bool enableSelection = false)
         {
-            if (WorkingMap.HitObjects.Count == 0) SeekTo(0, enableSelection: enableSelection);
-            SeekTo(WorkingMap.HitObjects.Min(h => h.StartTime), enableSelection: enableSelection);
+            SeekTo(WorkingMap.HitObjects.Count == 0 ? 0 : WorkingMap.HitObjects.Min(h => h.StartTime),
+                enableSelection: enableSelection);
         }
 
         public void SeekToEnd(bool enableSelection = false)
         {
-            if (WorkingMap.HitObjects.Count == 0) SeekTo(Track.Length, enableSelection: enableSelection);
-            SeekTo(WorkingMap.HitObjects.Max(h => Math.Max(h.StartTime, h.EndTime)), enableSelection: enableSelection);
+            SeekTo(
+                WorkingMap.HitObjects.Count == 0
+                    ? Track.Length
+                    : WorkingMap.HitObjects.Max(h => Math.Max(h.StartTime, h.EndTime)),
+                enableSelection: enableSelection);
         }
 
         public void SeekToStartOfSelection(bool enableSelection = false)
@@ -852,15 +863,17 @@ namespace Quaver.Shared.Screens.Edit
         {
             var newGroupId = EditorPluginUtils.GenerateTimingGroupId();
 
-            var rgb = new byte[3];
-            Random.Shared.NextBytes(rgb);
+            var rgb = ColorGenerator.NextColor(
+                WorkingMap.TimingGroups.Select(t => 
+                    ColorHelper.ToXnaColor(t.Value.GetColor())
+                    ).ToHashSet());
 
             var timingGroup = new ScrollGroup
             {
                 InitialScrollVelocity = 1,
                 ScrollVelocities =
                     new List<SliderVelocityInfo> { new() { Multiplier = 1, StartTime = 0 } },
-                ColorRgb = $"{rgb[0]},{rgb[1]},{rgb[2]}"
+                ColorRgb = $"{rgb.R},{rgb.G},{rgb.B}"
             };
 
             ActionManager.CreateTimingGroup(newGroupId, timingGroup, SelectedHitObjects.Value);                
@@ -1262,7 +1275,7 @@ namespace Quaver.Shared.Screens.Edit
                 {
                     // Remove any long notes that this note would reside in before placing
                     ActionManager.RemoveHitObjectBatch(lnsAtTime);
-                    heldLivemapHitObjectInfos[lane] = ActionManager.PlaceHitObject(lane, time, 0, layer);
+                    heldLivemapHitObjectInfos[lane] = ActionManager.PlaceHitObject(lane, time, 0, layer, timingGroupId: SelectedScrollGroupId);
                 }
             }
         }
