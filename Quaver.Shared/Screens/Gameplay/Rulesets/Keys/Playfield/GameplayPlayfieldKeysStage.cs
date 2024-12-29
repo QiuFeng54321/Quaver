@@ -350,7 +350,8 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.Playfield
                     };
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    return;
+                    // throw new ArgumentOutOfRangeException();
             }
 
             HitPositionOverlay = new Sprite

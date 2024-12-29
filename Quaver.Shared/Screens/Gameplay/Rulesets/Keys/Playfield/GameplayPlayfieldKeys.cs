@@ -242,11 +242,12 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.Playfield
                     throw new Exception("Map Mode does not exist.");
             }
 
+            ScrollDirections = new ScrollDirection[keys];
+
             // Case: Config = Split Scroll
             if (direction == ScrollDirection.Split)
             {
                 var halfIndex = (int)Math.Ceiling(keys / 2.0);
-                ScrollDirections = new ScrollDirection[keys];
                 for (var i = 0; i < keys; i++)
                 {
                     if (i >= halfIndex)
@@ -261,13 +262,44 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.Playfield
             if (direction == ScrollDirection.SplitReverse)
             {
                 var halfIndex = (int)Math.Floor(keys / 2.0);
-                ScrollDirections = new ScrollDirection[keys];
                 for (var i = 0; i < keys; i++)
                 {
                     if (i >= halfIndex)
                         ScrollDirections[i] = ScrollDirection.Down;
                     else
                         ScrollDirections[i] = ScrollDirection.Up;
+                }
+                return;
+            }
+
+            if (direction is ScrollDirection.Alternate or ScrollDirection.AlternateReverse)
+            {
+                var cur = direction is ScrollDirection.Alternate ? ScrollDirection.Down : ScrollDirection.Up;
+                for (var i = 0; i < keys; i++)
+                {
+                    ScrollDirections[i] = cur;
+                    cur = cur == ScrollDirection.Down ? ScrollDirection.Up : ScrollDirection.Down;
+                }
+                return;
+            }
+
+            if (direction is ScrollDirection.Mid or ScrollDirection.MidReverse)
+            {
+                var startIdx = (keys + 3) / 4;
+                var count = keys - startIdx * 2;
+                var cur = direction is ScrollDirection.MidReverse ? ScrollDirection.Down : ScrollDirection.Up;
+                Array.Fill(ScrollDirections, cur);
+                cur = cur == ScrollDirection.Down ? ScrollDirection.Up : ScrollDirection.Down;
+                Array.Fill(ScrollDirections, cur, startIdx, count);
+                return;
+            }
+
+            if (direction is ScrollDirection.Random)
+            {
+                var random = new Random();
+                for (var i = 0; i < keys; i++)
+                {
+                    ScrollDirections[i] = random.Next(2) == 0 ? ScrollDirection.Down : ScrollDirection.Up;
                 }
                 return;
             }
