@@ -16,6 +16,11 @@ namespace Quaver.Shared.Config
         Down,
         Up,
         Split,
-        SplitReverse
+        SplitReverse,
+        Alternate,
+        AlternateReverse,
+        Mid,
+        MidReverse,
+        Random
     }
 }
