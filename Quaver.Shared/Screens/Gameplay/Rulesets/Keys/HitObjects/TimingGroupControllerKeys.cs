@@ -52,6 +52,11 @@ public abstract class TimingGroupControllerKeys : TimingGroupController<HitObjec
     }
 
     /// <summary>
+    ///     Cache current scroll speed so we won't have to recalculate it for every note
+    /// </summary>
+    public float CachedScrollSpeed { get; private set; }
+
+    /// <summary>
     /// </summary>
     public GameplayRulesetKeys Ruleset => Manager.Ruleset;
 
@@ -87,6 +92,7 @@ public abstract class TimingGroupControllerKeys : TimingGroupController<HitObjec
 
     public virtual void Initialize()
     {
+        CachedScrollSpeed = ScrollSpeed;
         LongLNs = new HashSet<NoteControllerKeys>();
 
         // Using cell size equal to render area guarantees a consistent two cells accessed per update
@@ -132,7 +138,10 @@ public abstract class TimingGroupControllerKeys : TimingGroupController<HitObjec
     /// <summary>
     ///     Updates <see cref="CurrentTrackPosition"/>
     /// </summary>
-    public abstract void UpdateCurrentTrackPosition();
+    public virtual void UpdateCurrentTrackPosition()
+    {
+        CachedScrollSpeed = ScrollSpeed;
+    }
 
     /// <summary>
     ///     When called, it means that a skip has occurred. This can be implemented to reset something.

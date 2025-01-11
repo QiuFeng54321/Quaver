@@ -58,7 +58,7 @@ public class ScrollGroupControllerKeys : TimingGroupControllerKeys
     ///     Only objects within this distance of the <see cref="CurrentTrackPosition"/> are rendered.
     /// </summary>
     public override long RenderThreshold =>
-        (long)Math.Abs(WindowManager.Height * HitObjectManagerKeys.TrackRounding / ScrollSpeed);
+        (long)Math.Abs(WindowManager.Height * HitObjectManagerKeys.TrackRounding / CachedScrollSpeed);
 
     /// <summary>
     ///     Create SV-position points for computation optimization
@@ -249,7 +249,7 @@ public class ScrollGroupControllerKeys : TimingGroupControllerKeys
     ///     Update Current position of the hit objects
     /// </summary>
     /// <param name="audioTime"></param>
-    public override sealed void UpdateCurrentTrackPosition()
+    public sealed override void UpdateCurrentTrackPosition()
     {
         // Update SV index if necessary. Afterwards update Position.
         while (CurrentSvIndex < ScrollVelocityInfos.Count &&
@@ -267,6 +267,7 @@ public class ScrollGroupControllerKeys : TimingGroupControllerKeys
 
 
         CurrentTrackPosition = GetPositionFromTime(Manager.CurrentVisualAudioOffset, CurrentSvIndex);
+        base.UpdateCurrentTrackPosition();
     }
 
     /// <summary>

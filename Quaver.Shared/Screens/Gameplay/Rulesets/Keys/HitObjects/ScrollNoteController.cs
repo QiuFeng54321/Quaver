@@ -119,8 +119,8 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
         public override float GetSpritePosition(float hitPosition, float initialPos) =>
             hitPosition + ((initialPos - TimingGroupController.CurrentTrackPosition) *
                            (ScrollDirection == ScrollDirection.Down
-                               ? -ScrollGroupController.ScrollSpeed
-                               : ScrollGroupController.ScrollSpeed)
+                               ? -ScrollGroupController.CachedScrollSpeed
+                               : ScrollGroupController.CachedScrollSpeed)
                            / HitObjectManagerKeys.TrackRounding);
 
         private void SetEarliestAndLatestLongNotes(double curTime, ref long earliestPosition, ref long latestPosition)
