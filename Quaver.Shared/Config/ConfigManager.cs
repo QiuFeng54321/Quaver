@@ -216,7 +216,7 @@ namespace Quaver.Shared.Config
         /// <summary>
         ///     Percentage of scaling applied when changing rates
         /// </summary>
-        internal static BindableInt ScaleScrollSpeedStrengthPercentage { get; private set; }
+        internal static BindableInt NormaliseScrollVelocityByRatePercentage { get; private set; }
 
         /// <summary>
         ///     Direction in which hit objects will be moving for 4K gamemode
@@ -1064,7 +1064,7 @@ namespace Quaver.Shared.Config
             SmoothAudioStart = ReadValue(@"SmoothAudioStart", false, data);
             ScrollSpeed4K = ReadInt(@"ScrollSpeed4K", 150, 50, 1000, data);
             ScrollSpeed7K = ReadInt(@"ScrollSpeed7K", 150, 50, 1000, data);
-            ScaleScrollSpeedStrengthPercentage = ReadInt(@"ScaleScrollSpeedStrengthPercentage", 0, 0, 100, data);
+            NormaliseScrollVelocityByRatePercentage = ReadInt(@"NormaliseScrollVelocityByRatePercentage", 0, 0, 100, data);
             ScrollDirection4K = ReadValue(@"ScrollDirection4K", ScrollDirection.Down, data);
             ScrollDirection7K = ReadValue(@"ScrollDirection7K", ScrollDirection.Down, data);
             GlobalAudioOffset = ReadInt(@"GlobalAudioOffset", 0, -500, 500, data);

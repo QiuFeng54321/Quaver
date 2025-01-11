@@ -26,7 +26,7 @@ public abstract class TimingGroupControllerKeys : TimingGroupController<HitObjec
 
     /// <summary>
     ///     This is the perceived scroll speed to the player.
-    ///     This is adjusted by <see cref="ConfigManager.ScaleScrollSpeedStrengthPercentage"/>
+    ///     This is adjusted by <see cref="ConfigManager.NormaliseScrollVelocityByRatePercentage"/>
     /// </summary>
     public virtual float AdjustedScrollSpeed
     {
@@ -37,8 +37,12 @@ public abstract class TimingGroupControllerKeys : TimingGroupController<HitObjec
                 speed = MapManager.Selected.Value.Qua.Mode == GameMode.Keys4
                     ? ConfigManager.ScrollSpeed4K
                     : ConfigManager.ScrollSpeed7K;
+
+            if (!Manager.HasSignificantSVs)
+                return speed.Value;
+
             var rateScaling = 1 + (ModHelper.GetRateFromMods(ModManager.Mods) - 1) *
-                ConfigManager.ScaleScrollSpeedStrengthPercentage.Value / 100f;
+                ConfigManager.NormaliseScrollVelocityByRatePercentage.Value / 100f;
 
             // Cap the speed
             var adjustedScrollSpeed = Math.Clamp(speed.Value * rateScaling, 50, 1000);
