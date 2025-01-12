@@ -50,6 +50,11 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
         private Qua Map;
 
         /// <summary>
+        ///     Whether the normalized map contains any SVs outside the range 0.99x - 1.01x.
+        /// </summary>
+        public bool HasSignificantSVs { get; private set; }
+
+        /// <summary>
         ///     Cached length of the map
         /// </summary>
         private int Length { get; set; }
@@ -275,10 +280,15 @@ namespace Quaver.Shared.Screens.Gameplay.Rulesets.Keys.HitObjects
             {
                 if (TimingGroupControllers.TryGetValue(id, out TimingGroupControllerKeys timingGroupController))
                     continue;
-                if (timingGroup is ScrollGroup)
+
+                if (timingGroup is ScrollGroup scrollGroup)
+                {
+                    if (scrollGroup.ScrollVelocities.Any(x => x.Multiplier > 1.01 || x.Multiplier < 0.99))
+                        HasSignificantSVs = true;
+
                     timingGroupController = new ScrollGroupControllerKeys(timingGroup, Map, this);
-                else
-                    throw new InvalidOperationException();
+                }
+                else throw new InvalidOperationException();
 
                 timingGroupController.Initialize();
                 TimingGroupControllers.Add(id, timingGroupController);
