@@ -355,137 +355,104 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
 
         /// <summary>
         /// </summary>
-        private void DrawTable()
+        private unsafe void DrawTable()
         {
-            DrawTableHeader();
-            DrawTableColumns();
-        }
-
-        /// <summary>
-        /// </summary>
-        private void DrawTableHeader()
-        {
-            ImGui.Columns(3);
-            ImGui.SetColumnWidth(0, 160);
-            ImGui.TextWrapped("ID");
-            ImGui.NextColumn();
-            ImGui.TextWrapped("Color");
-            ImGui.NextColumn();
-            ImGui.TextWrapped("Visible");
-            ImGui.Separator();
-            ImGui.Columns();
-        }
-
-        /// <summary>
-        /// </summary>
-        private void DrawTableColumns()
-        {
-            ImGui.BeginChild("Timing Group Area");
-            ImGui.Columns(3);
-            ImGui.SetColumnWidth(0, 160);
-
-            const int elementBaseHeight = 12;
-            const int numberOfColumns = 3;
-            var elementHeight = Screen.ImGuiScale * elementBaseHeight;
-            var y = ImGui.GetContentRegionAvail().Y;
-
-            var start = Math.Min(
-                (int)(_progress * Screen.WorkingMap.TimingGroups.Count - 1),
-                Screen.WorkingMap.TimingGroups.Count - (int)(y / elementHeight)
-            );
-
-            for (var j = 0; j < numberOfColumns; j++)
+            if (!ImGui.BeginTable("##TGTable", 3, ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingStretchSame))
             {
-                ImGui.Dummy(new(0, start * elementHeight));
-                ImGui.NextColumn();
+                IsWindowHovered = ImGui.IsWindowHovered() || ImGui.IsAnyItemFocused();
+                return;
             }
 
-            var end = Math.Min((int)(y / elementHeight) + start + 1, Screen.WorkingMap.TimingGroups.Count);
+            ImGui.TableSetupScrollFreeze(0, 1);
+            ImGui.TableSetupColumn("ID");
+            ImGui.TableSetupColumn("Color");
+            ImGui.TableSetupColumn("Visible");
+            ImGui.TableHeadersRow();
+            var clipperRaw = new ImGuiListClipper();
+            var clipper = new ImGuiListClipperPtr(&clipperRaw);
+            clipper.Begin(Screen.WorkingMap.TimingGroups.Count);
 
-            foreach (var (id, timingGroup) in Screen.WorkingMap.TimingGroups)
+            while (clipper.Step())
             {
-                // https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-why-is-my-widget-not-reacting-when-i-click-on-it
-                // allows all SVs with same truncated time to be selected, instead of just the first in list
-                ImGui.PushID(id);
-
-                var isSelected = SelectedTimingGroups.Contains(id);
-
-                if (!isSelected)
-                    ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(100, 100, 100, 0));
-
-                if (ImGui.Button(id))
+                foreach (var (id, timingGroup) in Screen.WorkingMap.TimingGroups.Take(clipper.DisplayStart..clipper.DisplayEnd))
                 {
-                    // User holds down control, so add/remove it from the currently list of selected points
-                    if (KeyboardManager.IsCtrlDown())
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    // https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-why-is-my-widget-not-reacting-when-i-click-on-it
+                    // allows all SVs with same truncated time to be selected, instead of just the first in list
+                    ImGui.PushID(id);
+
+                    var isSelected = SelectedTimingGroups.Contains(id);
+
+                    if (!isSelected)
+                        ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(100, 100, 100, 0));
+
+                    if (ImGui.Button(id))
                     {
-                        if (isSelected)
-                            SelectedTimingGroups.Remove(id);
+                        // User holds down control, so add/remove it from the currently list of selected points
+                        if (KeyboardManager.IsCtrlDown())
+                        {
+                            if (isSelected)
+                                SelectedTimingGroups.Remove(id);
+                            else
+                                SelectedTimingGroups.Add(id);
+                        }
                         else
+                        {
+                            if (isSelected)
+                            {
+                                var hitObjectInfo = Screen.WorkingMap.GetTimingGroupObjects(id).FirstOrDefault();
+                                if (hitObjectInfo != null)
+                                    Screen.Track.Seek(hitObjectInfo.StartTime);
+                            }
+
+                            SelectedTimingGroups.Clear();
                             SelectedTimingGroups.Add(id);
-                    }
-                    else
-                    {
-                        if (isSelected)
-                        {
-                            var hitObjectInfo = Screen.WorkingMap.GetTimingGroupObjects(id).FirstOrDefault();
-                            if (hitObjectInfo != null)
-                                Screen.Track.Seek(hitObjectInfo.StartTime);
+
+                            if (timingGroup is ScrollGroup)
+                                Screen.SelectedScrollGroupId = id;
                         }
-
-                        SelectedTimingGroups.Clear();
-                        SelectedTimingGroups.Add(id);
-
-                        if (timingGroup is ScrollGroup)
-                            Screen.SelectedScrollGroupId = id;
                     }
-                }
-                RenderSpecialTimingGroupTooltip(id);
 
-                if (!isSelected)
-                    ImGui.PopStyleColor();
+                    RenderSpecialTimingGroupTooltip(id);
 
-                ImGui.NextColumn();
-                const ImGuiColorEditFlags colorOptions = ImGuiColorEditFlags.Float | ImGuiColorEditFlags.NoInputs |
-                                                         ImGuiColorEditFlags.NoPicker;
-                DrawColorEdit(id, timingGroup, colorOptions, $"Column_{id}");
-                ImGui.NextColumn();
+                    if (!isSelected)
+                        ImGui.PopStyleColor();
+                    ImGui.TableNextColumn();
+                    const ImGuiColorEditFlags colorOptions = ImGuiColorEditFlags.Float | ImGuiColorEditFlags.NoInputs |
+                                                             ImGuiColorEditFlags.NoPicker;
+                    DrawColorEdit(id, timingGroup, colorOptions, $"Column_{id}");
+                    ImGui.TableNextColumn();
 
-                var visible = !timingGroup.Hidden;
-                if (ImGui.Checkbox("##Visible", ref visible))
-                {
-                    if (KeyboardManager.IsShiftDown())
+                    var visible = !timingGroup.Hidden;
+                    if (ImGui.Checkbox("##Visible", ref visible))
                     {
-                        if (visible)
+                        if (KeyboardManager.IsShiftDown())
                         {
-                            foreach (var (_, tg) in Screen.WorkingMap.TimingGroups)
-                                tg.Hidden = true;
+                            if (visible)
+                            {
+                                foreach (var (_, tg) in Screen.WorkingMap.TimingGroups)
+                                    tg.Hidden = true;
+                            }
+                            else
+                            {
+                                // We are shift unticking a group. If this is the only ticked group,
+                                // Make all other groups visible. Otherwise, make them all invisible.
+                                // In this action the ticked group will still be visible
+                                var b = Screen.WorkingMap.TimingGroups.Values.Count(tg => !tg.Hidden) != 1;
+                                foreach (var (_, tg) in Screen.WorkingMap.TimingGroups)
+                                    tg.Hidden = b;
+                            }
+
+                            timingGroup.Hidden = false;
                         }
                         else
-                        {
-                            // We are shift unticking a group. If this is the only ticked group,
-                            // Make all other groups visible. Otherwise, make them all invisible.
-                            // In this action the ticked group will still be visible
-                            var b = Screen.WorkingMap.TimingGroups.Values.Count(tg => !tg.Hidden) != 1;
-                            foreach (var (_, tg) in Screen.WorkingMap.TimingGroups)
-                                tg.Hidden = b;
-                        }
-
-                        timingGroup.Hidden = false;
+                            timingGroup.Hidden = !visible;
                     }
-                    else 
-                        timingGroup.Hidden = !visible;
+
+                    ImGui.PopID();
                 }
-                ImGui.NextColumn();
-
-                ImGui.PopID();
             }
-
-            for (var j = 0; j < numberOfColumns; j++)
-            {
-                ImGui.Dummy(new(0, (Screen.WorkingMap.TimingGroups.Count - end) * elementHeight));
-                ImGui.NextColumn();
-            }
-
             _progress = ImGui.GetScrollY() / ImGui.GetScrollMaxY();
 
             if (float.IsNaN(_progress))
@@ -493,8 +460,7 @@ namespace Quaver.Shared.Screens.Edit.Plugins.Timing
 
             IsWindowHovered = ImGui.IsWindowHovered() || ImGui.IsAnyItemFocused();
             HandleInput();
-            ImGui.Columns();
-            ImGui.EndChild();
+            ImGui.EndTable();
         }
 
         private void RenderSpecialTimingGroupTooltip(string id)
