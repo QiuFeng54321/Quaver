@@ -60,7 +60,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield
 
         /// <summary>
         /// </summary>
-        protected BindableList<HitObjectInfo> SelectedHitObjects { get; }
+        protected BindableList<HitObjectInfo> SelectedHitObjects { get; set; }
 
         /// <summary>
         /// </summary>

@@ -531,9 +531,15 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield
             Spectrogram?.Destroy();
             SpectrogramLoadTask?.Dispose();
 
+            SelectedHitObjects.ItemAdded = null;
+            SelectedHitObjects.ItemRemoved = null;
+            SelectedHitObjects.ListCleared = null;
+            SelectedHitObjects.MultipleItemsAdded = null;
+
             ThreadScheduler.Run(() =>
             {
-                HitObjects.ForEach(x => x.Destroy());
+                foreach (var x in HitObjects)
+                    x.BatchDestroy();
                 Timeline?.Destroy();
                 LineContainer?.Destroy();
             });
@@ -659,6 +665,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield
                 Y = 200,
             };
 
+            WaveformLoadTask?.Cancel();
             WaveformLoadTask = new TaskHandler<int, int>(CreateWaveform);
 
             WaveformLoadTask.OnCompleted += (sender, args) => LoadingWaveform.FadeOut();
@@ -695,6 +702,7 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield
                 Y = 200,
             };
 
+            SpectrogramLoadTask?.Cancel();
             SpectrogramLoadTask = new TaskHandler<int, int>(CreateSpectrogram);
 
             SpectrogramLoadTask.OnCompleted += (sender, args) => LoadingSpectrogram.FadeOut();

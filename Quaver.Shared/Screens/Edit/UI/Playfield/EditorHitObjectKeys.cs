@@ -93,17 +93,22 @@ namespace Quaver.Shared.Screens.Edit.UI.Playfield
         /// </summary>
         public override void Destroy()
         {
+            SelectedHitObjects.ItemAdded -= OnSelectedHitObject;
+            SelectedHitObjects.ItemRemoved -= OnDeselectedHitObject;
+            SelectedHitObjects.ListCleared -= OnAllObjectsDeselected;
+            SelectedHitObjects.MultipleItemsAdded -= OnMultipleItemsAdded;
+            BatchDestroy();
+        }
+
+        public void BatchDestroy()
+        {
             base.Destroy();
             Body?.Destroy();
             Tail?.Destroy();
 
             // ReSharper disable twice DelegateSubtraction
             Coloring.ValueChanged -= OnViewLayersChanged;
-
-            SelectedHitObjects.ItemAdded -= OnSelectedHitObject;
-            SelectedHitObjects.ItemRemoved -= OnDeselectedHitObject;
-            SelectedHitObjects.ListCleared -= OnAllObjectsDeselected;
-            SelectedHitObjects.MultipleItemsAdded -= OnMultipleItemsAdded;
+            SelectedHitObjects = null;
         }
 
         /// <inheritdoc />
